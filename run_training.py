@@ -33,7 +33,8 @@ _valid_configs = [
 
 #----------------------------------------------------------------------------
 
-def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, mirror_augment, metrics):
+def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, mirror_augment, metrics, 
+        resume_pkl=None, resume_kimg=0.0, resume_time=0.0, snapshot_ticks=10, minibatch_size_base=32, minibatch_gpu_base=4):
     train     = EasyDict(run_func_name='training.training_loop.training_loop') # Options for training loop.
     G         = EasyDict(func_name='training.networks_stylegan2.G_main')       # Options for generator network.
     D         = EasyDict(func_name='training.networks_stylegan2.D_stylegan2')  # Options for discriminator network.
@@ -46,13 +47,18 @@ def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, m
     sc        = dnnlib.SubmitConfig()                                          # Options for dnnlib.submit_run().
     tf_config = {'rnd.np_random_seed': 1000}                                   # Options for tflib.init_tf().
 
+    resume_pkl  = None,     # Network pickle to resume training from, None = train from scratch.
+    resume_kimg = 0.0,      # Assumed training progress at the beginning. Affects reporting and training schedule.
+    resume_time = 0.0,      # Assumed wallclock time at the beginning. Affects reporting.
+    snapshot_ticks = 10
+
     train.data_dir = data_dir
     train.total_kimg = total_kimg
     train.mirror_augment = mirror_augment
-    train.image_snapshot_ticks = train.network_snapshot_ticks = 10
+    train.image_snapshot_ticks = train.network_snapshot_ticks = snapshot_ticks
     sched.G_lrate_base = sched.D_lrate_base = 0.002
-    sched.minibatch_size_base = 32
-    sched.minibatch_gpu_base = 4
+    sched.minibatch_size_base = minibatch_size_base
+    sched.minibatch_gpu_base = minibatch_gpu_base
     D_loss.gamma = 10
     metrics = [metric_defaults[x] for x in metrics]
     desc = 'stylegan2'
@@ -114,6 +120,7 @@ def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, m
     kwargs = EasyDict(train)
     kwargs.update(G_args=G, D_args=D, G_opt_args=G_opt, D_opt_args=D_opt, G_loss_args=G_loss, D_loss_args=D_loss)
     kwargs.update(dataset_args=dataset_args, sched_args=sched, grid_args=grid, metric_arg_list=metrics, tf_config=tf_config)
+    kwargs.update(resume_pkl=resume_pkl, resume_kimg=resume_kimg, resume_time=resume_time)
     kwargs.submit_config = copy.deepcopy(sc)
     kwargs.submit_config.run_dir_root = result_dir
     kwargs.submit_config.run_desc = desc
@@ -168,6 +175,13 @@ def main():
     parser.add_argument('--gamma', help='R1 regularization weight (default is config dependent)', default=None, type=float)
     parser.add_argument('--mirror-augment', help='Mirror augment (default: %(default)s)', default=False, metavar='BOOL', type=_str_to_bool)
     parser.add_argument('--metrics', help='Comma-separated list of metrics or "none" (default: %(default)s)', default='fid50k', type=_parse_comma_sep)
+
+    parser.add_argument('--resume_pkl', default=None, help='Network pickle to resume training from, None = train from scratch.', type=str)
+    parser.add_argument('--resume_kimg', default=0.0, help='Assumed training progress at the beginning. Affects reporting and training schedule.', type=float)
+    parser.add_argument('--resume_time', default=0.0, help='Assumed wallclock time at the beginning. Affects reporting.', type=float)
+    parser.add_argument('--snapshot_ticks', default=10, type=int)
+    parser.add_argument('--minibatch_size_base', default=32, type=int)
+    parser.add_argument('--minibatch_gpu_base', default=4, type=int)
 
     args = parser.parse_args()
 
