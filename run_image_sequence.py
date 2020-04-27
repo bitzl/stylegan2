@@ -95,6 +95,7 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
 
     def update(_):
         if len(buffer) == 0:
+            print("Fill buffer:", z_idx, "of", len(zs))
             z = zs[z_idx:batch_size]
             z_idx = z_idx + batch_size
             rnd = np.random.RandomState(1000)
