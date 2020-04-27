@@ -37,6 +37,36 @@ def generate_frames(network_pkl, zs_path, truncation_psi):
 
 
 
+def generate_frames_batch(network_pkl, zs_path, truncation_psi, batch_size):
+    print('Loading networks from "%s"...' % network_pkl)
+    _G, _D, Gs = pretrained_networks.load_networks(network_pkl)
+    noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
+
+    Gs_kwargs = dnnlib.EasyDict()
+    Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
+    Gs_kwargs.randomize_noise = False
+    Gs_kwargs.minibatch_size = batch_size
+    if truncation_psi is not None:
+        Gs_kwargs.truncation_psi = truncation_psi
+
+    zs = np.load(zs_path)
+    
+    buffer = []
+    z_idx = 0
+
+    for frame_index in range(len(zs)):
+        if len(buffer) == 0:
+            print(f"{frame_index:08d} Refill buffer ({z_idx} of {len(zs)})", end="... ")
+            z = zs[z_idx:z_idx+batch_size]
+            z_idx = z_idx + batch_size
+            rnd = np.random.RandomState(1000)
+            tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
+            buffer.extend(Gs.run(z, None, **Gs_kwargs)) # [minibatch, height, width, channel]
+            print("buffer has now", len(buffer), "items")
+        PIL.Image.fromarray(buffer.pop(0), 'RGB').save(dnnlib.make_run_dir_path('%06d.png' % frame_index))
+
+
+
 def generate_movie(network_pkl, zs_path, truncation_psi):
     print('Loading networks from "%s"...' % network_pkl)
     _G, _D, Gs = pretrained_networks.load_networks(network_pkl)
