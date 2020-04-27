@@ -95,7 +95,7 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
 
     def update(_):
         
-        if len(buffer) == None:
+        if len(buffer) == 0:
             z = zs[0:batch_size]
             rnd = np.random.RandomState(1000)
             tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
