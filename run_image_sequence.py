@@ -96,13 +96,15 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
 
     def update(frame_index):
         nonlocal z_idx
+        nonlocal buffer
         if len(buffer) == 0:
-            print(f"{frame_index:08d} Refill buffer ({z_idx} of {len(zs)})")
+            print(f"{frame_index:08d} Refill buffer ({z_idx} of {len(zs)})", end="... ")
             z = zs[z_idx:batch_size]
             z_idx = z_idx + batch_size
             rnd = np.random.RandomState(1000)
             tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
             buffer.extend(Gs.run(z, None, **Gs_kwargs)) # [minibatch, height, width, channel]
+            print("buffer has now", len(buffer), "items")
         
             # assert z.shape == (1, *Gs.input_shape[1:]) # [minibatch, component]
         ax.imshow(buffer.pop(0), vmin=0, vmax=1)
