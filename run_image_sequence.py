@@ -94,9 +94,9 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
     z_idx = 0
 
     def update(_):
-        
         if len(buffer) == 0:
-            z = zs[0:batch_size]
+            z = zs[z_idx:batch_size]
+            z_idx = z_idx + batch_size
             rnd = np.random.RandomState(1000)
             tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
             buffer.extend(Gs.run(z, None, **Gs_kwargs)) # [minibatch, height, width, channel]
