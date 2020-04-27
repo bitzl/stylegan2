@@ -93,9 +93,9 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
     buffer = []
     z_idx = 0
 
-    def update(_):
+    def update(frame_index):
         if len(buffer) == 0:
-            print("Fill buffer:", z_idx, "of", len(zs))
+            print("Fill buffer:", z_idx, "of", len(zs), "-", frame_index)
             z = zs[z_idx:batch_size]
             z_idx = z_idx + batch_size
             rnd = np.random.RandomState(1000)
@@ -108,7 +108,7 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
     animation = FuncAnimation(
         fig,
         update,
-        zs,
+        range(zs),
         fargs=[],
         interval=1000 / 25
     )
