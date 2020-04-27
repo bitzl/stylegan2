@@ -89,13 +89,13 @@ Run 'python %(prog)s <subcommand> --help' for subcommand help.''',
 
     parser_generate_images = subparsers.add_parser('frames', help='Generate frames')
     parser_generate_images.add_argument('--network', help='Network pickle filename', dest='network_pkl', required=True)
-    parser_generate_images.add_argument('--zs', type=str, help='File of feature vectors', required=True)
+    parser_generate_images.add_argument('--zs_path', type=str, help='File of feature vectors', required=True)
     parser_generate_images.add_argument('--truncation-psi', type=float, help='Truncation psi (default: %(default)s)', default=0.5)
     parser_generate_images.add_argument('--result-dir', help='Resulting directory for run results (default: %(default)s)', default='results', metavar='DIR')
 
     parser_generate_images = subparsers.add_parser('movie', help='Generate movie')
     parser_generate_images.add_argument('--network', help='Network pickle filename', dest='network_pkl', required=True)
-    parser_generate_images.add_argument('--zs', type=str, help='File of feature vectors', required=True)
+    parser_generate_images.add_argument('--zs_path', type=str, help='File of feature vectors', required=True)
     parser_generate_images.add_argument('--truncation-psi', type=float, help='Truncation psi (default: %(default)s)', default=0.5)
     parser_generate_images.add_argument('--result-dir', help='Resulting directory for run results (default: %(default)s)', default='results', metavar='DIR')
 
