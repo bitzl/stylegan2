@@ -28,6 +28,7 @@ def generate_frames(network_pkl, zs_path, truncation_psi):
     zs = np.load(zs_path)
 
     for z_idx, z in tqdm(enumerate(zs)):
+        z = np.array([z])
         assert z.shape == (1, *Gs.input_shape[1:]) # [minibatch, component]
         rnd = np.random.RandomState(1000)
         tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
@@ -49,6 +50,7 @@ def generate_movie(network_pkl, zs_path, truncation_psi):
 
     zs = np.load(zs_path)
     def animate(z):
+        z = np.array([z])
         assert z.shape == (1, *Gs.input_shape[1:]) # [minibatch, component]
         rnd = np.random.RandomState(1000)
         tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
