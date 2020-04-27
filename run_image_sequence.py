@@ -63,20 +63,58 @@ def generate_movie(network_pkl, zs_path, truncation_psi):
         ax.imshow(images[0], vmin=0, vmax=1)
 
     animation = FuncAnimation(
-        # Your Matplotlib Figure object
         fig,
-        # The function that does the updating of the Figure
         animate,
-        # Frame information (here just frame number)
         zs,
-        # Extra arguments to the animate function
         fargs=[],
-        # Frame-time in ms; i.e. for a given frame-rate x, 1000/x
         interval=1000 / 25
     )
 
-    # Try to set the DPI to the actual number of pixels you're plotting
     animation.save(dnnlib.make_run_dir_path("movie.mp4"), dpi=zs.shape[1])
+
+
+def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
+    print('Loading networks from "%s"...' % network_pkl)
+    _G, _D, Gs = pretrained_networks.load_networks(network_pkl)
+    noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
+
+    Gs_kwargs = dnnlib.EasyDict()
+    Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
+    Gs_kwargs.randomize_noise = False
+    if truncation_psi is not None:
+        Gs_kwargs.truncation_psi = truncation_psi
+
+    fig, ax = plt.subplots(1, figsize=(1, 1))
+    fig.subplots_adjust(0, 0, 1, 1)
+    ax.axis("off")
+    
+    zs = np.load(zs_path)
+    
+    buffer = []
+    z_idx = 0
+
+    def update(_):
+        
+        if len(buffer) == None:
+            z = zs[0:batch_size]
+            rnd = np.random.RandomState(1000)
+            tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
+            buffer.extend(Gs.run(z, None, **Gs_kwargs)) # [minibatch, height, width, channel]
+        
+            # assert z.shape == (1, *Gs.input_shape[1:]) # [minibatch, component]
+        ax.imshow(buffer.pop(0), vmin=0, vmax=1)
+
+    animation = FuncAnimation(
+        fig,
+        update,
+        zs,
+        fargs=[],
+        interval=1000 / 25
+    )
+
+    animation.save(dnnlib.make_run_dir_path("movie.mp4"), dpi=zs.shape[1])
+
+
 
 
 def main():
@@ -101,6 +139,13 @@ Run 'python %(prog)s <subcommand> --help' for subcommand help.''',
     parser_generate_images.add_argument('--truncation-psi', type=float, help='Truncation psi (default: %(default)s)', default=0.5)
     parser_generate_images.add_argument('--result-dir', help='Resulting directory for run results (default: %(default)s)', default='results', metavar='DIR')
 
+    parser_generate_images = subparsers.add_parser('movie-batch', help='Generate movie with batches')
+    parser_generate_images.add_argument('--network', help='Network pickle filename', dest='network_pkl', required=True)
+    parser_generate_images.add_argument('--zs_path', type=str, help='File of feature vectors', required=True)
+    parser_generate_images.add_argument('--truncation-psi', type=float, help='Truncation psi (default: %(default)s)', default=0.5)
+    parser_generate_images.add_argument('--batch-size', type=int, help='Batch size of images to compute in one go', default=8, required=True)
+    parser_generate_images.add_argument('--result-dir', help='Resulting directory for run results (default: %(default)s)', default='results', metavar='DIR')
+
     args = parser.parse_args()
     kwargs = vars(args)
     subcmd = kwargs.pop('command')
@@ -119,6 +164,7 @@ Run 'python %(prog)s <subcommand> --help' for subcommand help.''',
     func_name_map = {
         'frames': 'run_image_sequence.generate_frames',
         'movie': 'run_image_sequence.generate_movie',
+        'movie-batch': 'run_image_sequence.generate_movie_batch',
     }
     dnnlib.submit_run(sc, func_name_map[subcmd], **kwargs)
 
