@@ -99,7 +99,7 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
         nonlocal buffer
         if len(buffer) == 0:
             print(f"{frame_index:08d} Refill buffer ({z_idx} of {len(zs)})", end="... ")
-            z = zs[z_idx:batch_size]
+            z = zs[z_idx:z_idx+batch_size]
             z_idx = z_idx + batch_size
             rnd = np.random.RandomState(1000)
             tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
