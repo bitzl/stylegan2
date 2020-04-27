@@ -81,6 +81,7 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
     Gs_kwargs = dnnlib.EasyDict()
     Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
     Gs_kwargs.randomize_noise = False
+    Gs_kwargs.minibatch_size = batch_size
     if truncation_psi is not None:
         Gs_kwargs.truncation_psi = truncation_psi
 
