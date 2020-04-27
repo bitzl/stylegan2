@@ -94,6 +94,7 @@ def generate_movie_batch(network_pkl, zs_path, truncation_psi, batch_size):
     z_idx = 0
 
     def update(frame_index):
+        nonlocal z_idx
         if len(buffer) == 0:
             print(f"{frame_index:08d} Refill buffer ({z_idx} of {len(zs)})")
             z = zs[z_idx:batch_size]
