@@ -48,6 +48,11 @@ def generate_movie(network_pkl, zs_path, truncation_psi):
     if truncation_psi is not None:
         Gs_kwargs.truncation_psi = truncation_psi
 
+    fig, ax = plt.subplots(1, figsize=(1, 1))
+    fig.subplots_adjust(0, 0, 1, 1)
+    ax.axis("off")
+    
+
     zs = np.load(zs_path)
     def animate(z):
         z = np.array([z])
@@ -55,13 +60,7 @@ def generate_movie(network_pkl, zs_path, truncation_psi):
         rnd = np.random.RandomState(1000)
         tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars}) # [height, width]
         images = Gs.run(z, None, **Gs_kwargs) # [minibatch, height, width, channel]
-        image.set_array(images[0])
-        return image
-
-    fig, ax = plt.subplots(1, figsize=(1, 1))
-    fig.subplots_adjust(0, 0, 1, 1)
-    ax.axis("off")
-    image = ax.imshow(animate(zs[0]), vmin=0, vmax=1)
+        ax.imshow(animate(zs[0]), vmin=0, vmax=1)
 
     animation = FuncAnimation(
         # Your Matplotlib Figure object
